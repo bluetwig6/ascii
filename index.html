@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./styles.css" />
+  <title>Document</title>
+</head>
+
+<body>
+
+  <input type="file" multiple="false" id="fileInput">
+  <form>
+    <fieldset>
+      <legend>Display modes:</legend>
+      <div>
+        <input type="radio" id="default" name="displayMode" value="default" checked />
+        <label for="default">Default</label>
+      </div>
+
+      <div>
+        <input type="radio" id="colorCellBackground" name="displayMode" value="colorCellBackground" />
+        <label for="dewey">Color cell background</label>
+      </div>
+
+      <div>
+        <input type="radio" id="colorText" name="displayMode" value="colorText" />
+        <label for="louie">Color text</label>
+      </div>
+      <div>
+        <input type="radio" id="colorText" name="displayMode" value="multiply" />
+        <label for="louie">Multiply  (Dark Text Color)</label>
+      </div>
+    </fieldset>
+  </form>
+  <canvas id="canvas"></canvas>
+  <canvas id="canvas2"></canvas>
+  <div>
+    <label>
+      Cell Size: <span id="cellSizeValue">4</span>
+      <input type="range" id="cellSizeInput" min="1" max="40" value="4">
+    </label>
+    <label>
+      Font Size: <span id="fontSizeValue">4</span>
+      <input type="range" id="fontSizeInput" min="1" max="40" value="4">
+    </label>
+  </div>
+  <!--
+for most samples webgl-utils only provides shader compiling/linking and
+canvas resizing because why clutter the examples with code that's the same in every sample.
+See https://webglfundamentals.org/webgl/lessons/webgl-boilerplate.html
+and https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
+for webgl-utils, m3, m4, and webgl-lessons-ui.
+-->
+  <script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
+  <script type="module" src="./script.js"></script>
+
+</body>
+
+</html>
