@@ -15,6 +15,20 @@ const fontSizeValueSpan = document.querySelector("#fontSizeValue");
 var CELL_SIZE = cellSizeInput.value;
 var FONT_SIZE = fontSizeInput.value;
 
+var videoHasStartedPlaying = false;
+
+const pauseButton = document.querySelector("#pause");
+
+pauseButton.addEventListener("click", () => {
+  if (video.paused) {
+    pauseButton.innerHTML = "PAUSE";
+    video.play();
+  } else {
+    pauseButton.innerHTML = "RESUME";
+    video.pause();
+  }
+});
+
 let myReq; // holds the request animation frame
 let video; // hold the video object
 let displayMode = 0; // show color in the cell background
@@ -42,29 +56,31 @@ const resetAspectRatioMultiplier = () => {
 };
 
 const imageFitInput = document.querySelector("#fit");
-imageFit = imageFitInput.value // set initial value
+imageFit = imageFitInput.value; // set initial value
 
 imageFitInput.addEventListener("change", (event) => {
-  if(!video) { return }
+  if (!video) {
+    return;
+  }
   switch (event.target.value) {
     case "fit-to-screen":
-      imageFit = 'fit-to-screen'
+      imageFit = "fit-to-screen";
       setAspectRatioMultiplier();
       cancelAnimationFrame(myReq);
       setupASCIIImage(video);
       break;
     case "original":
-      imageFit = 'original'
+      imageFit = "original";
       resetAspectRatioMultiplier();
       cancelAnimationFrame(myReq);
       setupASCIIImage(video);
       break;
     default:
-      imageFit = 'fit-to-screen'
+      imageFit = "fit-to-screen";
       setAspectRatioMultiplier();
       cancelAnimationFrame(myReq);
       setupASCIIImage(video);
-      break
+      break;
   }
 });
 
@@ -203,7 +219,7 @@ console.log(CHAR_LIST);
 let PREVIOUS_TIME;
 
 window.onresize = () => {
-  if (video && (imageFit === 'fit-to-screen')) {
+  if (video && imageFit === "fit-to-screen") {
     setAspectRatioMultiplier();
     cancelAnimationFrame(myReq);
     setupASCIIImage(video);
@@ -224,16 +240,20 @@ function setupVideo(url = "./video.mp4") {
   // Waiting for these 2 events ensures
   // there is data in the video
   console.log("loading video");
-
+  videoHasStartedPlaying = false;
   video.addEventListener(
     "playing",
     () => {
-      console.log(video);
-      console.log("playing video");
-      setAspectRatioMultiplier();
-      setupASCIIImage(video);
-      playing = true;
-      checkReady();
+      if (videoHasStartedPlaying) {
+      } else {
+        videoHasStartedPlaying = true;
+        console.log(video);
+        console.log("playing video");
+        setAspectRatioMultiplier();
+        setupASCIIImage(video);
+        playing = true;
+        checkReady();
+      }
     },
     true
   );
