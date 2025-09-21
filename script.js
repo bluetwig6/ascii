@@ -1,78 +1,217 @@
-import { drawScene } from './drawScene';
-import fragmentSource from './fragment.glsl?raw'
-import { initBuffers } from './init-buffers'
-import { initShaderProgram } from './initshaderprogram'
-import vertexSource from './vertex.glsl?raw'
+import { drawScene } from "./drawScene";
+import fragmentSource from "./fragment.glsl?raw";
+import { initBuffers } from "./init-buffers";
+import { initShaderProgram } from "./initshaderprogram";
+import vertexSource from "./vertex.glsl?raw";
 let deltaTime = 0;
-let copyVideo = false
+let copyVideo = false;
 
-const cellSizeInput= document.querySelector('#cellSizeInput')
-const fontSizeInput= document.querySelector('#fontSizeInput')
+const cellSizeInput = document.querySelector("#cellSizeInput");
+const fontSizeInput = document.querySelector("#fontSizeInput");
 
-const cellSizeValueSpan = document.querySelector('#cellSizeValue')
-const fontSizeValueSpan = document.querySelector('#fontSizeValue')
+const cellSizeValueSpan = document.querySelector("#cellSizeValue");
+const fontSizeValueSpan = document.querySelector("#fontSizeValue");
 
-
-var CELL_SIZE = cellSizeInput.value
-var FONT_SIZE = fontSizeInput.value
+var CELL_SIZE = cellSizeInput.value;
+var FONT_SIZE = fontSizeInput.value;
 
 let myReq; // holds the request animation frame
 let video; // hold the video object
 let displayMode = 0; // show color in the cell background
 
-const displayModeRadioButtons = document.querySelectorAll('[name=displayMode]')
-displayModeRadioButtons.forEach(input => {
-  console.log(input)
-  input.addEventListener('change', (e) => {
-    switch(e.target.value){
-      case 'default':
-        displayMode = 0.0
-    console.log(displayMode)
+var aspectRatioMultiplier = 1;
+var imageFit;
 
-        return
-      case 'colorCellBackground':
-        displayMode = 1.0
-    console.log(displayMode)
+const setAspectRatioMultiplier = () => {
+  const canvasWrapper = document.querySelector("#canvasWrapper");
+  const wrapperHeight = canvasWrapper.offsetHeight;
+  const wrapperWidth = canvasWrapper.offsetWidth;
+  const videoHeight = video.videoHeight;
+  const videoWidth = video.videoWidth;
+  const heightRunoffPerc = (videoHeight - wrapperHeight) / videoHeight;
+  const widthRunoffPerc = (videoWidth - wrapperWidth) / videoWidth;
+  const outPercentage = Math.min(
+    1,
+    1 - Math.max(heightRunoffPerc, widthRunoffPerc)
+  );
+  aspectRatioMultiplier = outPercentage;
+};
 
-        return
-      case 'colorText':
-        displayMode = 2.0
-    console.log(displayMode)
-    case 'multiply':
-        displayMode = 3.0
-    console.log(displayMode)
+const resetAspectRatioMultiplier = () => {
+  aspectRatioMultiplier = 1;
+};
 
-        return
+const imageFitInput = document.querySelector("#fit");
+imageFit = imageFitInput.value // set initial value
+
+imageFitInput.addEventListener("change", (event) => {
+  if(!video) { return }
+  switch (event.target.value) {
+    case "fit-to-screen":
+      imageFit = 'fit-to-screen'
+      setAspectRatioMultiplier();
+      cancelAnimationFrame(myReq);
+      setupASCIIImage(video);
+      break;
+    case "original":
+      imageFit = 'original'
+      resetAspectRatioMultiplier();
+      cancelAnimationFrame(myReq);
+      setupASCIIImage(video);
+      break;
+    default:
+      imageFit = 'fit-to-screen'
+      setAspectRatioMultiplier();
+      cancelAnimationFrame(myReq);
+      setupASCIIImage(video);
+      break
+  }
+});
+
+const displayModeRadioButtons = document.querySelectorAll("[name=displayMode]");
+displayModeRadioButtons.forEach((input) => {
+  input.addEventListener("change", (e) => {
+    switch (e.target.value) {
+      case "default":
+        displayMode = 0.0;
+        return;
+      case "colorCellBackground":
+        displayMode = 1.0;
+        return;
+      case "colorText":
+        displayMode = 2.0;
+      case "multiply":
+        displayMode = 3.0;
+        return;
     }
-  })
-})
+  });
+});
 
 cellSizeInput.addEventListener("input", (event) => {
   CELL_SIZE = Number(event.target.value);
-  cellSizeValueSpan.innerHTML = CELL_SIZE
-  console.log('cell size',CELL_SIZE)
-  cancelAnimationFrame(myReq)
-  setupASCIIImage(video)
+  cellSizeValueSpan.innerHTML = CELL_SIZE;
+  cancelAnimationFrame(myReq);
+  setupASCIIImage(video);
 });
 
 fontSizeInput.addEventListener("input", (event) => {
   FONT_SIZE = Number(event.target.value);
-  fontSizeValueSpan.innerHTML = FONT_SIZE
-  console.log('font size',FONT_SIZE)
-  cancelAnimationFrame(myReq)
-  setupASCIIImage(video)
+  fontSizeValueSpan.innerHTML = FONT_SIZE;
+  cancelAnimationFrame(myReq);
+  setupASCIIImage(video);
 });
-
-
 
 // const CHAR_LIST = [' ', '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~']
 const CHAR_LIST = [
-  ' ', '`', '.', '-', "'", ':', '_', ',', '^', '=', ';', '>', '<', '+', '!', 'r', 'c', '*', '/', 'z', '?', 's', 'L', 'T', 'v', ')', 'J', '7', '(', '|', 'F', 'i', '{', 'C', '}', 'f', 'I', '3', '1', 't', 'l', 'u', '[', 'n', 'e', 'o', 'Z', '5', 'Y', 'x', 'j', 'y', 'a', ']', '2', 'E', 'S', 'w', 'q', 'k', 'P', '6', 'h', '9', 'd', '4', 'V', 'p', 'O', 'G', 'b', 'U', 'A', 'K', 'X', 'H', 'm', '8', 'R', 'D', '#', '$', 'B', 'g', '0', 'M', 'N', 'W', 'Q', '%', '&', '@']
+  " ",
+  "`",
+  ".",
+  "-",
+  "'",
+  ":",
+  "_",
+  ",",
+  "^",
+  "=",
+  ";",
+  ">",
+  "<",
+  "+",
+  "!",
+  "r",
+  "c",
+  "*",
+  "/",
+  "z",
+  "?",
+  "s",
+  "L",
+  "T",
+  "v",
+  ")",
+  "J",
+  "7",
+  "(",
+  "|",
+  "F",
+  "i",
+  "{",
+  "C",
+  "}",
+  "f",
+  "I",
+  "3",
+  "1",
+  "t",
+  "l",
+  "u",
+  "[",
+  "n",
+  "e",
+  "o",
+  "Z",
+  "5",
+  "Y",
+  "x",
+  "j",
+  "y",
+  "a",
+  "]",
+  "2",
+  "E",
+  "S",
+  "w",
+  "q",
+  "k",
+  "P",
+  "6",
+  "h",
+  "9",
+  "d",
+  "4",
+  "V",
+  "p",
+  "O",
+  "G",
+  "b",
+  "U",
+  "A",
+  "K",
+  "X",
+  "H",
+  "m",
+  "8",
+  "R",
+  "D",
+  "#",
+  "$",
+  "B",
+  "g",
+  "0",
+  "M",
+  "N",
+  "W",
+  "Q",
+  "%",
+  "&",
+  "@",
+];
 
-const CHAR_COUNT = CHAR_LIST.length
-console.log(CHAR_LIST)
+const CHAR_COUNT = CHAR_LIST.length;
+console.log(CHAR_LIST);
 
-function setupVideo(url = './video.mp4') {
+let PREVIOUS_TIME;
+
+window.onresize = () => {
+  if (video && (imageFit === 'fit-to-screen')) {
+    setAspectRatioMultiplier();
+    cancelAnimationFrame(myReq);
+    setupASCIIImage(video);
+  }
+};
+
+function setupVideo(url = "./video.mp4") {
+  PREVIOUS_TIME = null;
   video = document.createElement("video");
 
   let playing = false;
@@ -84,25 +223,28 @@ function setupVideo(url = './video.mp4') {
 
   // Waiting for these 2 events ensures
   // there is data in the video
-  console.log('loading video')
+  console.log("loading video");
+
   video.addEventListener(
     "playing",
     () => {
-      console.log('playing video')
-      setupASCIIImage(video)
+      console.log(video);
+      console.log("playing video");
+      setAspectRatioMultiplier();
+      setupASCIIImage(video);
       playing = true;
       checkReady();
     },
-    true,
+    true
   );
 
   video.addEventListener(
     "timeupdate",
-    () => {
+    (e) => {
       timeupdate = true;
       checkReady();
     },
-    true,
+    true
   );
 
   video.src = url;
@@ -143,7 +285,7 @@ function initTexture(gl) {
     border,
     srcFormat,
     srcType,
-    pixel,
+    pixel
   );
 
   // Turn off mips and set wrapping to clamp to edge so it
@@ -154,7 +296,6 @@ function initTexture(gl) {
 
   return texture;
 }
-
 
 function updateTexture(gl, texture, video) {
   const level = 0;
@@ -168,7 +309,7 @@ function updateTexture(gl, texture, video) {
     internalFormat,
     srcFormat,
     srcType,
-    video,
+    video
   );
 }
 
@@ -176,40 +317,45 @@ const setupASCIIImage = (video) => {
   // setup ascii texture
   /** @type {HTMLCanvasElement} */
   var c = document.querySelector("#canvas2");
-  var ctx = c.getContext('2d')
-  c.height = video.videoHeight
-  c.width = video.videoWidth
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, video.videoWidth, video.videoHeight)
+  var ctx = c.getContext("2d");
+  c.height = video.videoHeight * aspectRatioMultiplier;
+  c.width = video.videoWidth * aspectRatioMultiplier;
+  ctx.scale(aspectRatioMultiplier, aspectRatioMultiplier); // scale down the canvas
+
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, video.videoWidth, video.videoHeight);
   // setup ascii texture
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = '#fff'
-  ctx.font = `${FONT_SIZE}px arial`
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#fff";
+  ctx.font = `${FONT_SIZE}px arial`;
   CHAR_LIST.forEach((char, idx) => {
-    ctx.fillText(char, idx * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2)
-  })
-  const asciiImage = new Image()
-  asciiImage.src = c.toDataURL("image/png").replace("image/png", "image/octet-stream");  // here is the most important part because if you dont replace you will get a DOM 18 exception.
+    ctx.fillText(char, idx * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2);
+  });
+  const asciiImage = new Image();
+  asciiImage.src = c
+    .toDataURL("image/png")
+    .replace("image/png", "image/octet-stream"); // here is the most important part because if you dont replace you will get a DOM 18 exception.
   asciiImage.onload = function () {
-    main(video, asciiImage)
+    main(video, asciiImage);
   };
-  return asciiImage
-}
+  return asciiImage;
+};
 
 function main(video, asciiImage) {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
   var canvas = document.querySelector("#canvas");
-  canvas.width = video.videoWidth
-  canvas.height = video.videoHeight
+  canvas.width = video.videoWidth * aspectRatioMultiplier;
+  canvas.height = video.videoHeight * aspectRatioMultiplier;
+
   var gl = canvas.getContext("webgl2");
   if (!gl) {
     return;
   }
 
   // setup GLSL program
-  const shaderProgram = initShaderProgram(gl, vertexSource, fragmentSource)
+  const shaderProgram = initShaderProgram(gl, vertexSource, fragmentSource);
   const programInfo = {
     program: shaderProgram,
     attriblocations: {
@@ -217,38 +363,59 @@ function main(video, asciiImage) {
       texcoordLocation: gl.getAttribLocation(shaderProgram, "a_texCoord"),
     },
     uniformLocations: {
-      textureSizeLocation: gl.getUniformLocation(shaderProgram, "u_textureSize"),
+      textureSizeLocation: gl.getUniformLocation(
+        shaderProgram,
+        "u_textureSize"
+      ),
       cellSizeLocation: gl.getUniformLocation(shaderProgram, "u_cellSize"),
-      charCountLocation: gl.getUniformLocation(shaderProgram, 'u_charCount'),
-      displayModeLocation: gl.getUniformLocation(shaderProgram, 'u_displayMode'),
+      charCountLocation: gl.getUniformLocation(shaderProgram, "u_charCount"),
+      displayModeLocation: gl.getUniformLocation(
+        shaderProgram,
+        "u_displayMode"
+      ),
       u_image0Location: gl.getUniformLocation(shaderProgram, "u_image0"),
       u_image1Location: gl.getUniformLocation(shaderProgram, "u_image1"),
       resolutionLocation: gl.getUniformLocation(shaderProgram, "u_resolution"),
-      resolutionLocation2: gl.getUniformLocation(shaderProgram, "u_resolution2"),
-    }
-  }
-
+      resolutionLocation2: gl.getUniformLocation(
+        shaderProgram,
+        "u_resolution2"
+      ),
+    },
+  };
 
   gl.useProgram(shaderProgram);
 
-  const buffers = initBuffers(gl, video.videoWidth, video.videoHeight)
+  const buffers = initBuffers(
+    gl,
+    video.videoWidth * aspectRatioMultiplier,
+    video.videoHeight * aspectRatioMultiplier
+  );
 
   var texture = initTexture(gl);
-  var asciiTexture = initTexture(gl)
-  updateTexture(gl, asciiTexture, asciiImage)
+  var asciiTexture = initTexture(gl);
+  updateTexture(gl, asciiTexture, asciiImage);
 
-  let then = 0
   // Draw the scene repeatedly
-  function render(now) {
-    now *= 0.001; // convert to seconds
-    deltaTime = now - then;
-    then = now;
+  function render() {
+    // run only when video frame changes
+    if (PREVIOUS_TIME !== video.currentTime) {
+      PREVIOUS_TIME = video.currentTime;
+      if (copyVideo) {
+        updateTexture(gl, texture, video);
+      }
 
-    if (copyVideo) {
-      updateTexture(gl, texture, video);
+      drawScene(
+        gl,
+        programInfo,
+        buffers,
+        texture,
+        asciiTexture,
+        video,
+        CELL_SIZE * aspectRatioMultiplier,
+        CHAR_COUNT,
+        displayMode
+      );
     }
-
-    drawScene(gl, programInfo, buffers, texture, asciiTexture, video, CELL_SIZE, CHAR_COUNT, displayMode);
 
     myReq = requestAnimationFrame(render);
   }
@@ -256,26 +423,24 @@ function main(video, asciiImage) {
   myReq = requestAnimationFrame(render);
 }
 
-const fileInput = document.querySelector('#fileInput')
-console.log(fileInput.file)
+const fileInput = document.querySelector("#fileInput");
+console.log(fileInput.file);
 
 fileInput.addEventListener("change", () => {
   if (fileInput.files.length === 1) {
-    const file = fileInput.files[0]
-    const reader = new FileReader()
-     reader.addEventListener(
-    "load",
-    () => {
-      // convert image file to base64 string
-      setupVideo(reader.result)
-    },
-    false,
-  );
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.addEventListener(
+      "load",
+      () => {
+        // convert image file to base64 string
+        setupVideo(reader.result);
+      },
+      false
+    );
 
-  
-  if (file) {
-    reader.readAsDataURL(file);
-  }
+    if (file) {
+      reader.readAsDataURL(file);
+    }
   }
 });
-

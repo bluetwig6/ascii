@@ -1,8 +1,6 @@
 const drawScene = (gl, programInfo, buffers, texture, asciiTexture, video, CELL_SIZE, CHAR_COUNT, displayMode) => {
-  console.log('dm: ',displayMode)
     // Tell WebGL how to convert from clip space to pixels
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
   // Clear the canvas
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -42,7 +40,8 @@ const drawScene = (gl, programInfo, buffers, texture, asciiTexture, video, CELL_
   gl.uniform2f(programInfo.uniformLocations.resolutionLocation2, gl.canvas.width, gl.canvas.height);
 
   // set the size of the image
-  gl.uniform2f(programInfo.uniformLocations.textureSizeLocation, video.videoWidth, video.videoHeight);
+  gl.uniform2f(programInfo.uniformLocations.textureSizeLocation, gl.canvas.width, gl.canvas.height);
+  // gl.uniform2f(programInfo.uniformLocations.textureSizeLocation, video.videoWidth, video.videoHeight);
 
   // set the cell size
   gl.uniform2f(programInfo.uniformLocations.cellSizeLocation, parseFloat(CELL_SIZE), parseFloat(CELL_SIZE));
