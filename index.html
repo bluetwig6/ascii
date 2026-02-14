@@ -6,44 +6,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="./styles.css" />
   <title>Document</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
 </head>
 
 <body>
   <div class="container">
     <div class="controlsWrapper">
-      <input type="file" multiple="false" id="fileInput">
       <form>
         <fieldset>
-          <legend>Display modes:</legend>
-          <div>
+          <legend>MODE: </legend>
+          <div class="input-wrapper">
             <input type="radio" id="default" name="displayMode" value="default" checked />
-            <label for="default">Default</label>
+            <label for="default">DEFAULT</label>
           </div>
 
-          <div>
+          <div class="input-wrapper">
             <input type="radio" id="colorCellBackground" name="displayMode" value="colorCellBackground" />
-            <label for="dewey">Color cell background</label>
+            <label for="dewey">COLOR CELL BACKGROUND</label>
           </div>
 
-          <div>
+          <div class="input-wrapper">
             <input type="radio" id="colorText" name="displayMode" value="colorText" />
-            <label for="louie">Color text</label>
+            <label for="louie">COLOR TEXT</label>
           </div>
-          <div>
+          <div class="input-wrapper">
             <input type="radio" id="colorText" name="displayMode" value="multiply" />
-            <label for="louie">Multiply (Dark Text Color)</label>
+            <label for="louie">MULTIPLY (DARK TEXT COLOR)</label>
           </div>
         </fieldset>
       </form>
       <div>
-        <label>
-          Cell Size: <span id="cellSizeValue">4</span>
+        <fieldset>
+          <legend>SIZE: </legend>
+          <label>
+          CELL SIZE: <span id="cellSizeValue">4</span>
           <input type="range" id="cellSizeInput" min="1" max="40" value="4">
         </label>
+        <br>
         <label>
-          Font Size: <span id="fontSizeValue">4</span>
+          FONT SIZE: <span id="fontSizeValue">4</span>
           <input type="range" id="fontSizeInput" min="1" max="40" value="4">
         </label>
+        </fieldset>
+       
       </div>
        <label for="fit">Choose image fit: </label>
     <select name="fit" id="fit">
@@ -55,7 +62,11 @@
     <div class="canvasWrapper" id="canvasWrapper">
       <canvas id="canvas"></canvas>
       <canvas id="canvas2"></canvas>
-      <div>
+      <div id="videoControls">
+        <label for="fileInput" class="fileInputLabel">
+          UPLOAD VIDEO
+          <input type="file" multiple="false" id="fileInput">
+        </label>
         <button id="pause">Pause</button>
       </div>
     </div>

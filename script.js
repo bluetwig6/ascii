@@ -1,23 +1,35 @@
+import { chars } from "./charlist";
 import { drawScene } from "./drawScene";
 import fragmentSource from "./fragment.glsl?raw";
 import { initBuffers } from "./init-buffers";
 import { initShaderProgram } from "./initshaderprogram";
 import vertexSource from "./vertex.glsl?raw";
-let deltaTime = 0;
-let copyVideo = false;
 
 const cellSizeInput = document.querySelector("#cellSizeInput");
 const fontSizeInput = document.querySelector("#fontSizeInput");
-
 const cellSizeValueSpan = document.querySelector("#cellSizeValue");
 const fontSizeValueSpan = document.querySelector("#fontSizeValue");
+const imageFitInput = document.querySelector("#fit");
+const pauseButton = document.querySelector("#pause");
+const displayModeRadioButtons = document.querySelectorAll("[name=displayMode]");
+
+let pauseRender = false
 
 var CELL_SIZE = cellSizeInput.value;
 var FONT_SIZE = fontSizeInput.value;
+const CHAR_LIST = chars
+const CHAR_COUNT = CHAR_LIST.length;
+let deltaTime = 0;
+let copyVideo = false;
 
+let myReq; // holds the request animation frame
+let video; // hold the video object
+let displayMode = 0; // show color in the cell background
+var aspectRatioMultiplier = 1;
+var imageFit;
+imageFit = imageFitInput.value; // set initial value
 var videoHasStartedPlaying = false;
-
-const pauseButton = document.querySelector("#pause");
+let PREVIOUS_TIME;
 
 pauseButton.addEventListener("click", () => {
   if (video.paused) {
@@ -28,13 +40,6 @@ pauseButton.addEventListener("click", () => {
     video.pause();
   }
 });
-
-let myReq; // holds the request animation frame
-let video; // hold the video object
-let displayMode = 0; // show color in the cell background
-
-var aspectRatioMultiplier = 1;
-var imageFit;
 
 const setAspectRatioMultiplier = () => {
   const canvasWrapper = document.querySelector("#canvasWrapper");
@@ -54,9 +59,6 @@ const setAspectRatioMultiplier = () => {
 const resetAspectRatioMultiplier = () => {
   aspectRatioMultiplier = 1;
 };
-
-const imageFitInput = document.querySelector("#fit");
-imageFit = imageFitInput.value; // set initial value
 
 imageFitInput.addEventListener("change", (event) => {
   if (!video) {
@@ -84,7 +86,6 @@ imageFitInput.addEventListener("change", (event) => {
   }
 });
 
-const displayModeRadioButtons = document.querySelectorAll("[name=displayMode]");
 displayModeRadioButtons.forEach((input) => {
   input.addEventListener("change", (e) => {
     switch (e.target.value) {
@@ -106,117 +107,21 @@ displayModeRadioButtons.forEach((input) => {
 cellSizeInput.addEventListener("input", (event) => {
   CELL_SIZE = Number(event.target.value);
   cellSizeValueSpan.innerHTML = CELL_SIZE;
-  cancelAnimationFrame(myReq);
+  // console.log('stopping render', myReq)
+  cancelAnimationFrame(myReq); // this does not stop the queued reqAnimationFrames. Need pauseRender flag to pause them
+  pauseRender = true
   setupASCIIImage(video);
 });
 
 fontSizeInput.addEventListener("input", (event) => {
   FONT_SIZE = Number(event.target.value);
   fontSizeValueSpan.innerHTML = FONT_SIZE;
+  // console.log('stopping render', myReq)
   cancelAnimationFrame(myReq);
+  pauseRender = true
   setupASCIIImage(video);
 });
 
-// const CHAR_LIST = [' ', '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~']
-const CHAR_LIST = [
-  " ",
-  "`",
-  ".",
-  "-",
-  "'",
-  ":",
-  "_",
-  ",",
-  "^",
-  "=",
-  ";",
-  ">",
-  "<",
-  "+",
-  "!",
-  "r",
-  "c",
-  "*",
-  "/",
-  "z",
-  "?",
-  "s",
-  "L",
-  "T",
-  "v",
-  ")",
-  "J",
-  "7",
-  "(",
-  "|",
-  "F",
-  "i",
-  "{",
-  "C",
-  "}",
-  "f",
-  "I",
-  "3",
-  "1",
-  "t",
-  "l",
-  "u",
-  "[",
-  "n",
-  "e",
-  "o",
-  "Z",
-  "5",
-  "Y",
-  "x",
-  "j",
-  "y",
-  "a",
-  "]",
-  "2",
-  "E",
-  "S",
-  "w",
-  "q",
-  "k",
-  "P",
-  "6",
-  "h",
-  "9",
-  "d",
-  "4",
-  "V",
-  "p",
-  "O",
-  "G",
-  "b",
-  "U",
-  "A",
-  "K",
-  "X",
-  "H",
-  "m",
-  "8",
-  "R",
-  "D",
-  "#",
-  "$",
-  "B",
-  "g",
-  "0",
-  "M",
-  "N",
-  "W",
-  "Q",
-  "%",
-  "&",
-  "@",
-];
-
-const CHAR_COUNT = CHAR_LIST.length;
-console.log(CHAR_LIST);
-
-let PREVIOUS_TIME;
 
 window.onresize = () => {
   if (video && imageFit === "fit-to-screen") {
@@ -239,7 +144,7 @@ function setupVideo(url = "./video.mp4") {
 
   // Waiting for these 2 events ensures
   // there is data in the video
-  console.log("loading video");
+  // console.log("loading video");
   videoHasStartedPlaying = false;
   video.addEventListener(
     "playing",
@@ -247,8 +152,7 @@ function setupVideo(url = "./video.mp4") {
       if (videoHasStartedPlaying) {
       } else {
         videoHasStartedPlaying = true;
-        console.log(video);
-        console.log("playing video");
+        // console.log("playing video");
         setAspectRatioMultiplier();
         setupASCIIImage(video);
         playing = true;
@@ -362,6 +266,10 @@ const setupASCIIImage = (video) => {
   return asciiImage;
 };
 
+let shaderProgram
+let programInfo
+  var texture
+  var asciiTexture
 function main(video, asciiImage) {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
@@ -374,9 +282,11 @@ function main(video, asciiImage) {
     return;
   }
 
+  if(!shaderProgram) {
+
   // setup GLSL program
-  const shaderProgram = initShaderProgram(gl, vertexSource, fragmentSource);
-  const programInfo = {
+  shaderProgram = initShaderProgram(gl, vertexSource, fragmentSource);
+  programInfo = {
     program: shaderProgram,
     attriblocations: {
       positionLocation: gl.getAttribLocation(shaderProgram, "a_position"),
@@ -401,6 +311,8 @@ function main(video, asciiImage) {
         "u_resolution2"
       ),
     },
+  }
+
   };
 
   gl.useProgram(shaderProgram);
@@ -411,19 +323,22 @@ function main(video, asciiImage) {
     video.videoHeight * aspectRatioMultiplier
   );
 
-  var texture = initTexture(gl);
-  var asciiTexture = initTexture(gl);
+    texture = initTexture(gl);
+    asciiTexture = initTexture(gl);
+  
+  // console.log('updating texture',gl,asciiTexture,asciiImage)
   updateTexture(gl, asciiTexture, asciiImage);
 
   // Draw the scene repeatedly
   function render() {
+    if(pauseRender) { return }
+    // console.log('rendering')
     // run only when video frame changes
     if (PREVIOUS_TIME !== video.currentTime) {
       PREVIOUS_TIME = video.currentTime;
       if (copyVideo) {
         updateTexture(gl, texture, video);
       }
-
       drawScene(
         gl,
         programInfo,
@@ -439,12 +354,13 @@ function main(video, asciiImage) {
 
     myReq = requestAnimationFrame(render);
   }
-
-  myReq = requestAnimationFrame(render);
+    // console.log('starting render')
+    pauseRender = false
+  requestAnimationFrame(render);
 }
 
 const fileInput = document.querySelector("#fileInput");
-console.log(fileInput.file);
+// console.log(fileInput.file);
 
 fileInput.addEventListener("change", () => {
   if (fileInput.files.length === 1) {
@@ -453,6 +369,7 @@ fileInput.addEventListener("change", () => {
     reader.addEventListener(
       "load",
       () => {
+        cancelAnimationFrame(myReq)
         // convert image file to base64 string
         setupVideo(reader.result);
       },
