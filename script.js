@@ -10,8 +10,9 @@ const fontSizeInput = document.querySelector("#fontSizeInput");
 const cellSizeValueSpan = document.querySelector("#cellSizeValue");
 const fontSizeValueSpan = document.querySelector("#fontSizeValue");
 const imageFitInput = document.querySelector("#fit");
-const pauseButton = document.querySelector("#pause");
+const pauseButton = document.querySelector("#pause-button");
 const displayModeRadioButtons = document.querySelectorAll("[name=displayMode]");
+const fileInputLabel = document.querySelector("#fileInputLabel")
 
 let pauseRender = false
 
@@ -30,6 +31,8 @@ var imageFit;
 imageFit = imageFitInput.value; // set initial value
 var videoHasStartedPlaying = false;
 let PREVIOUS_TIME;
+
+pauseButton.style.display = 'none' // hide the button initially
 
 pauseButton.addEventListener("click", () => {
   if (video.paused) {
@@ -360,12 +363,30 @@ function main(video, asciiImage) {
 }
 
 const fileInput = document.querySelector("#fileInput");
+const filePreview = document.querySelector('#videoControls #preview')
 // console.log(fileInput.file);
 
+function returnFileSize(number) {
+  if (number < 1e3) {
+    return `${number} bytes`;
+  } else if (number >= 1e3 && number < 1e6) {
+    return `${(number / 1e3).toFixed(1)} KB`;
+  }
+  return `${(number / 1e6).toFixed(1)} MB`;
+}
+
 fileInput.addEventListener("change", () => {
+    filePreview.replaceChildren()
+    fileInputLabel.innerHTML = 'UPLOAD ANOTHER VIDEO'
   if (fileInput.files.length === 1) {
+    pauseButton.style.display = 'block'
     const file = fileInput.files[0];
     const reader = new FileReader();
+    const para = document.createElement("p");
+    para.textContent = `${file.name.toUpperCase()}, file size ${returnFileSize(
+        file.size,
+      )}.`;
+      filePreview.append(para)
     reader.addEventListener(
       "load",
       () => {

@@ -8,12 +8,24 @@ body {
   color: #FFF;
 }
 
+button {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 16px;
+  padding: 0px;
+  display: block;
+  border: none;
+  background: none;
+  color: white;
+  letter-spacing: 0.15em;
+}
 
 #canvas {
     width: auto;
     height: auto;
     border: none;
     background: #000;
+    justify-self: center;
+  align-self: center;
 }
 
 #canvas2 {
@@ -32,7 +44,6 @@ img {
 }
 
 .container{
-  width: 100vw;
   min-height: 100vh;
   display: flex;
 }
@@ -71,21 +82,48 @@ label {
 .canvasWrapper{
   flex: 1;
   overflow: auto;
-  display: grid;
-  place-content: center;
+  display: flex;
+  flex-direction: column;
 }
 
-.fileInputLabel {
+.canvas-container{
+  flex-grow: 1;
+  display: grid;
+}
+
+#fileInputLabel {
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  font-size: 16px;
 }
 
 #fileInput{
   max-width: 200px;
   opacity: 0;
+  height: 1px;
 }
 
 #videoControls{
-  justify-self: center;
+  margin-top: 16px;
+  height: 200px;
+}
+
+.videoControls-innerWrapper{
+  display: grid;
+  gap: 8px;
+}
+
+#pause-button{
+
+}
+
+#videoControls #preview{
+  font-size: 12px;
+  width: 100%;
+  letter-spacing: 0.15em;
+}
+
+#videoControls #preview p {
+  margin-block: 24px;
 }
